@@ -1,0 +1,6 @@
+@import "tailwindcss";
+:root { color-scheme: dark; }
+body { background: radial-gradient(circle at 50% 12%, #22234e, #080915 65%); color: #eef2ff; min-height: 100vh; font-family: Arial, Helvetica, sans-serif; }
+input,textarea { background: #15182e; border: 1px solid #45496a; border-radius: .65rem; padding: .7rem; width: 100%; }
+button { cursor: pointer; border-radius: .65rem; padding: .7rem 1rem; background: #5c54ba; }
+button:disabled { opacity: .5; cursor: not-allowed; }
