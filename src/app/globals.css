@@ -24,3 +24,18 @@ h1 em{background:linear-gradient(100deg,#a4d9ff,#c8a4ff,#ffc08a);background-clip
 .echo-visual::after{right:4px;background:#f19c6177;animation-delay:-4s}
 @keyframes spectralDrift{50%{transform:translateY(-10px) scale(1.07);opacity:.3}}
 @media(prefers-reduced-motion:reduce){.echo-core::before,.echo-visual::before,.echo-visual::after{animation:none!important}}
+
+/* GHOST-006C2: unmistakable but lightweight haunted motion. */
+.echo-core{animation:hauntedHover 3.1s ease-in-out infinite, spectralFlicker 4.3s steps(1,end) infinite}
+.echo-core::after{inset:20px 17px 18px;border-radius:48% 48% 42% 42%;background:radial-gradient(ellipse 17px 7px at 31% 41%,#ffae58 35%,transparent 70%),radial-gradient(ellipse 17px 7px at 69% 41%,#ffae58 35%,transparent 70%),radial-gradient(ellipse 8px 15px at 50% 77%,#09091d 45%,transparent 75%);filter:drop-shadow(0 0 8px #ff8a38);transform:rotate(-3deg)}
+.echo-core::before{inset:-24px;border-width:2px;border-color:#b67cffb0;filter:blur(4px);animation:spectralDrift 3.6s ease-in-out infinite}
+.echo-visual::before,.echo-visual::after{width:65px;height:105px;top:27px;filter:blur(12px);opacity:.8;animation:spectralDrift 3.8s ease-in-out infinite alternate}
+.echo-visual::after{animation-delay:-1.9s;animation-direction:alternate-reverse}
+.echo-halo{animation:hauntedAura 2.8s ease-in-out infinite}
+.ring-outer{animation:rotate 9s linear infinite;border-width:2px}
+.ring-inner{animation:rotate 6s linear infinite reverse;border-width:2px}
+.echo-pulse{animation:hauntedAura 3s ease-in-out infinite}
+@keyframes hauntedHover{0%,100%{transform:translateY(5px) rotate(-4deg)}50%{transform:translateY(-13px) rotate(4deg)}}
+@keyframes spectralFlicker{0%,100%{box-shadow:0 0 36px #9e69ed88,0 0 75px #ef8c4855}45%{box-shadow:0 0 45px #b780ffcc,0 0 100px #ff944c99}48%{box-shadow:0 0 15px #9e69ed66}52%{box-shadow:0 0 50px #bd88ffdd,0 0 95px #ff944caa}}
+@keyframes hauntedAura{0%,100%{transform:scale(.93);opacity:.4}50%{transform:scale(1.2);opacity:1}}
+@media(prefers-reduced-motion:reduce){.echo-core,.echo-halo,.echo-ring,.echo-pulse,.echo-visual::before,.echo-visual::after,.echo-core::before{animation:none!important}}
