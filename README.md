@@ -1,44 +1,95 @@
 # Project GHOST — Echoes of the Past
 
-A Hacktoberfest 2026 Week 4 local-first prototype: preserve written stories and explore them with an open-weight model through Ollama.
+A Halloween-themed, local-first memory investigation and storytelling prototype created for Hacktoberfest 2026 Week 4, “Ghost in the Machine.”
+
+Project GHOST combines browser-local memories, an animated Echo interface, a fictional Blackwood Manor mystery, and optional real local AI inference using Ollama and Gemma 3 1B. It is an experimental demo, not a production service.
+
+## Features
+
+- **Blackwood Manor investigation:** load three fictional witness accounts (Sarah, Marcus, Emily) and investigate the events of October 31, 1998.
+- **Investigate mode:** ask evidence-first questions, distinguish observations from speculation, and preserve unknowns.
+- **Tell the Story mode:** combine fixed witness facts with clearly labeled AI-generated fictional atmosphere; never treat embellishments as evidence.
+- **Browser-local memories:** save and revisit stories in IndexedDB.
+- **Scripted fictional demo:** explore the experience without running a local model. Scripted responses are not AI.
+- **Local Gemma 3 inference:** run the app on your own computer with Ollama. Hosted previews intentionally disable the AI endpoint.
+- **Animated Echo:** a Halloween-themed spectral interface with reduced-motion support.
 
 ## Requirements
-- Node.js 20.9+ (Node.js 22 LTS recommended)
-- Ollama installed and running locally
 
-## Setup
+- Node.js 20.9+ (Node.js 22 recommended)
+- npm
+- Optional for real AI: Ollama and the `gemma3:1b` model
+
+## Run locally
+
 ```bash
+git clone https://github.com/kendallm85/project-ghost.git
+cd project-ghost
 npm install
 cp .env.example .env.local
 ollama pull gemma3:1b
 npm run dev
 ```
-Open http://localhost:3000. If Ollama is not running, start it with `ollama serve` (on systems where the Ollama app has not already started it).
 
-## Demo
-1. Select **Load fictional demo**.
-2. Ask: **What color was the lantern?**
-3. Ask: **What was Mara's favorite song?** The Echo should say the story doesn't specify.
-4. Add your own *non-sensitive* test story, refresh, and verify browser-local persistence.
+Open http://localhost:3000. Start Ollama using your system's service manager or `ollama serve` if it is not already running. For scripted-only testing, Ollama is not required.
 
-## Privacy and limitations
-- Stories persist in the browser's IndexedDB and are transmitted to the Next.js server route only when asking the Echo; that route calls Ollama on the same machine.
-- Do not deploy this server route publicly without authentication, abuse protection, and a redesigned trust boundary. This is a **local demo**, not a production multi-user service.
-- No encryption-at-rest guarantee; other users of the same browser profile may access stored stories.
-- A model can hallucinate despite grounding instructions. Review outputs.
-- Deleting stored memories is not yet implemented; use browser site-data controls for the prototype.
-- AI and model license terms must be verified before distribution or prize category claims.
+The default local environment variables are:
 
-## Validation (to be performed in the user's environment)
+```dotenv
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=gemma3:1b
+```
+
+Do not commit `.env.local`. The API only accepts loopback Ollama addresses.
+
+## Try the Halloween mystery
+
+1. Load the **Halloween Mystery** to add three fictional Blackwood Manor witness accounts.
+2. Turn **scripted demo** off and ensure Ollama is running to use actual local AI.
+3. Select **Investigate** and ask: “Does the evidence prove the woman was a ghost?”
+4. Select **Tell the Story** for a fictional retelling that separates recorded observations from invented atmosphere.
+5. Test browser-local persistence by refreshing after saving a non-sensitive memory.
+
+A separate original lantern scripted demonstration is available for testing without AI. Do not present scripted output as model inference.
+
+## How the AI works
+
+The Next.js `/api/chat` route calls a local Ollama server when run on your own computer. The Blackwood Manor records are fictional test data. The investigation mode asks Gemma to ground its response in supplied records. The storytelling mode distinguishes fixed witness facts from AI-generated embellishment.
+
+**Performance note:** local inference on low-memory, CPU-only devices can be very slow or incomplete. A completed response on one computer does not guarantee the same speed elsewhere. Storytelling may return a fallback when AI atmosphere cannot be generated within the configured budget.
+
+## Validation
+
 ```bash
 npm run typecheck
 npm run lint
 npm run build
 ```
 
-## Hacktoberfest submission checklist
-- [ ] Confirm official rules, cutoff, model eligibility, and category details.
-- [ ] Verify real Ollama responses and IndexedDB persistence.
-- [ ] Record a working demo.
-- [ ] Review repository for secrets and private content, then publish.
-- [ ] Publish the DEV challenge post with code and demo links.
+GitHub Actions also runs these checks. A lint warning does not necessarily fail CI.
+
+## Privacy and limitations
+
+- Memories are saved in the current browser's IndexedDB. They are not encrypted at rest.
+- When asking real AI questions, supplied memories are sent to the locally running Next.js API route, which calls Ollama on the same computer.
+- **Hosted previews do not run AI inference**. Their scripted responses are demonstrations, not live Gemma output.
+- This prototype does not provide multi-user authentication, rate limiting, secure hosting of the AI route, or in-app deletion of memories. Use browser site-data controls to remove stored demo data.
+- Do not enter sensitive personal data. Do not expose the local AI API to the public internet.
+- Generative models can hallucinate or truncate responses. Fictional witness records do not establish supernatural facts.
+
+## Open-source licensing
+
+Application source code is licensed under the [MIT License](LICENSE). The separately obtained Gemma 3 model is **not** relicensed by this repository and remains subject to its own model license and terms. Third-party dependencies retain their respective licenses.
+
+## Hacktoberfest submission readiness
+
+- [x] Implement fictional Blackwood Manor case and dual experience modes.
+- [x] Verify real local Ollama/Gemma investigation output.
+- [x] Verify a hybrid fictional retelling, including labeled embellishment.
+- [x] Run automated typecheck, lint and build in GitHub Actions.
+- [ ] Review repository history and source for secrets before publishing.
+- [ ] Capture a short demo showing scripted and real local AI paths accurately.
+- [ ] Confirm official challenge requirements, deadline and model eligibility.
+- [ ] Publish the repository and submit the DEV challenge post.
+
+The application is deliberately kept private until its owner approves publication.
