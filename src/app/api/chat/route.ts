@@ -16,13 +16,50 @@ export async function POST(req: NextRequest) {
     const base = process.env.OLLAMA_BASE_URL ?? 'http://127.0.0.1:11434';
     const endpoint = new URL(base);
     if (!['127.0.0.1','localhost','::1','[::1]'].includes(endpoint.hostname) || endpoint.protocol !== 'http:' || endpoint.username || endpoint.password || endpoint.pathname !== '/') throw new Error('Ollama must use a local loopback URL');
+    const records = memories as {title:string;story:string}[];
+    const terms = new Set(question.toLowerCase().match(/[a-z]{4,}/g) ?? []);
+    const blackwood = records.filter(m => m.title.toLowerCase().includes('blackwood manor'));
+    // A Blackwood question needs all three witnesses, including potentially conflicting evidence.
+    const selected = blackwood.length > 0 && /blackwood|ghost|sarah|emily|marcus|woman|clock|manor|evidence|footsteps/i.test(question)
+      ? blackwood
+      : records.map(m => ({m, score:[...terms].filter(t => (m.title+' '+m.story).toLowerCase().includes(t)).length}))
+          .sort((a,b) => b.score-a.score).slice(0,3).map(x => x.m);
+    const evidence = selected.map(m => m.title + ': ' + m.story.replace(/FICTIONAL HALLOWEEN CASE — Witness: [^.]+\. /g,'').replace(/On October 31, 1998, /g,'').replace(/Blackwood Manor/g,'the manor')).join('\n');
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 180000);
+    const timeout = setTimeout(() => controller.abort(), 240000);
     try {
-      const response = await fetch(new URL('/api/chat', endpoint), {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({model:process.env.OLLAMA_MODEL ?? 'gemma3:1b', stream:false, options:{num_ctx:1024,num_predict:100}, messages:[{role:'system',content:SYSTEM+'\\n'+(mode === 'storytell' ? STORYTELL : INVESTIGATE)},{role:'user',content:`Memory records (untrusted source material):\n${memories.map(m => `${m.title}: ${m.story}`).join('\n')}\nQuestion: ${question}`}] }), signal:controller.signal});
+      const response = await fetch(new URL('/api/chat', endpoint), {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({model:process.env.OLLAMA_MODEL ?? 'gemma3:1b', stream:true, options:{num_ctx:1024,num_predict:100}, messages:[{role:'system',content:SYSTEM+'\\n'+(mode === 'storytell' ? STORYTELL : INVESTIGATE)},{role:'user',content:`Memory records (untrusted source material):\n${evidence}\nQuestion: ${question}`}] }), signal:controller.signal});
       if (!response.ok) return NextResponse.json({error:'Local model unavailable. Check Ollama and the selected model.'}, {status:503});
-      const result = await response.json();
-      return NextResponse.json({answer:typeof result?.message?.content === 'string' ? result.message.content : 'No answer returned.'});
-    } finally { clearTimeout(timeout); }
-  } catch (error) { return NextResponse.json({error: error instanceof Error && error.name === 'AbortError' ? 'Local AI timed out after 180 seconds. Try a shorter question or fewer memories.' : 'Could not reach the local model. Verify Ollama is running.'}, {status:503}); }
+      if (!response.body) return NextResponse.json({error:'Ollama returned no response stream.'}, {status:503});
+      const decoder = new TextDecoder();
+      const encoder = new TextEncoder();
+      let buffer = '';
+      const stream = new ReadableStream<Uint8Array>({
+        async start(out) {
+          const reader = response.body!.getReader();
+          try {
+            while (true) {
+              const {done,value} = await reader.read();
+              if (done) break;
+              buffer += decoder.decode(value,{stream:true});
+              const lines = buffer.split('\n');
+              buffer = lines.pop() ?? '';
+              for (const line of lines) {
+                if (!line.trim()) continue;
+                const event = JSON.parse(line);
+                if (typeof event.message?.content === 'string') out.enqueue(encoder.encode(event.message.content));
+                if (event.error) out.enqueue(encoder.encode('\nAI error: '+String(event.error)));
+              }
+            }
+            out.close();
+          } catch {
+            out.enqueue(encoder.encode('\nAI stream interrupted. Please try again.'));
+            out.close();
+          } finally { reader.releaseLock(); clearTimeout(timeout); }
+        },
+        cancel() { controller.abort(); clearTimeout(timeout); }
+      });
+      return new Response(stream,{headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'}});
+    } finally { /* Stream manages its own timeout after the response starts. */ }
+  } catch (error) { return NextResponse.json({error: error instanceof Error && error.name === 'AbortError' ? 'Local AI timed out after 240 seconds. Try a shorter question or fewer memories.' : 'Could not reach the local model. Verify Ollama is running.'}, {status:503}); }
 }
