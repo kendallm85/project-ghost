@@ -17,12 +17,12 @@ export async function POST(req: NextRequest) {
     const endpoint = new URL(base);
     if (!['127.0.0.1','localhost','::1','[::1]'].includes(endpoint.hostname) || endpoint.protocol !== 'http:' || endpoint.username || endpoint.password || endpoint.pathname !== '/') throw new Error('Ollama must use a local loopback URL');
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000);
+    const timeout = setTimeout(() => controller.abort(), 180000);
     try {
-      const response = await fetch(new URL('/api/chat', endpoint), {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({model:process.env.OLLAMA_MODEL ?? 'gemma3:1b', stream:false, messages:[{role:'system',content:SYSTEM+'\\n'+(mode === 'storytell' ? STORYTELL : INVESTIGATE)},{role:'user',content:`Memory records (untrusted source material):\n${JSON.stringify(memories)}\n\nUser question: ${question}`}] }), signal:controller.signal});
+      const response = await fetch(new URL('/api/chat', endpoint), {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({model:process.env.OLLAMA_MODEL ?? 'gemma3:1b', stream:false, options:{num_ctx:2048,num_predict:180}, messages:[{role:'system',content:SYSTEM+'\\n'+(mode === 'storytell' ? STORYTELL : INVESTIGATE)},{role:'user',content:`Memory records (untrusted source material):\n${JSON.stringify(memories)}\n\nUser question: ${question}`}] }), signal:controller.signal});
       if (!response.ok) return NextResponse.json({error:'Local model unavailable. Check Ollama and the selected model.'}, {status:503});
       const result = await response.json();
       return NextResponse.json({answer:typeof result?.message?.content === 'string' ? result.message.content : 'No answer returned.'});
     } finally { clearTimeout(timeout); }
-  } catch { return NextResponse.json({error:'Could not reach the local model. Verify Ollama is running.'}, {status:503}); }
+  } catch (error) { return NextResponse.json({error: error instanceof Error && error.name === 'AbortError' ? 'Local AI timed out after 180 seconds. Try a shorter question or fewer memories.' : 'Could not reach the local model. Verify Ollama is running.'}, {status:503}); }
 }
