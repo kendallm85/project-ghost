@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
       const supplied = memories as {title:string;story:string}[];
       const fullCase = BLACKWOOD_MEMORIES.every(w => supplied.some(m => m.title === w.title && m.story === w.story));
       if (!fullCase) return NextResponse.json({error:'Load the original Blackwood Manor case to use the verified hybrid retelling.'},{status:400});
-      const prefix = 'Fictional Halloween retelling (assembled from original witness records):\\nSarah reported a woman in white at an upstairs window at 11:47 PM. Marcus found the front door locked but could not see every entrance. Emily saw a clock displaying 11:47 PM and heard unidentified footsteps.\\n\\nAI-generated imaginative embellishment (fiction, not witness evidence): ';
-      const suffix = '\\n\\nWhat remains unknown (from case records): Who was the woman, and what caused the footsteps?';
+      const prefix = 'Fictional Halloween retelling (assembled from original witness records):\nSarah reported a woman in white at an upstairs window at 11:47 PM. Marcus found the front door locked but could not see every entrance. Emily saw a clock displaying 11:47 PM and heard unidentified footsteps.\n\nAI-generated imaginative embellishment (fiction, not witness evidence): ';
+      const suffix = '\n\nWhat remains unknown (from case records): Who was the woman, and what caused the footsteps?';
       const encoder = new TextEncoder();
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 180000);
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
                 const {done,value} = await reader.read();
                 if(done) break;
                 buffer += decoder.decode(value,{stream:true});
-                const lines = buffer.split('\\n');
+                const lines = buffer.split('\n');
                 buffer = lines.pop() ?? '';
                 for(const line of lines) {
                   if(!line.trim()) continue;
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
           } catch {
             out.enqueue(encoder.encode('[AI atmosphere unavailable on this device]'));
           } finally {
-            if(!completed) out.enqueue(encoder.encode('\\n[AI generation did not complete]'));
+            if(!completed) out.enqueue(encoder.encode('\n[AI generation did not complete]'));
             out.enqueue(encoder.encode(suffix));
             out.close();
             clearTimeout(timeout);
